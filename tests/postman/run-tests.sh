@@ -140,5 +140,6 @@ if [ $EXIT_CODE -eq 0 ]; then
 else
   echo "❌ Some tests failed. Check the reports for details."
 fi
+read -p "Press enter to continue..."
 
 exit $EXIT_CODE
