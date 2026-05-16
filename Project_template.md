@@ -23,3 +23,24 @@
 
 2. Скриншот состояния kafka topics state
 [topics-state](docs\topics-state.png)
+
+# Задание 3
+Решение перенесено в Kubernetes.
+
+### CI/CD
+
+ В папке .github/worflows доработайте деплой новых сервисов proxy и events в docker-build-push.yml , чтобы api-tests при сборке отрабатывали корректно при отправке коммита в ваш репозиторий.
+
+Сборка зеленая.
+
+### Proxy в Kubernetes
+
+Добавьте сюда скриншота вывода при вызове https://cinemaabyss.example.com/api/movies и  скриншот вывода event-service после вызова тестов.
+1. Скриншот вызова "https://cinemaabyss.example.com/api/movies"
+[cinemaabyss_browser](docs\cinemaabyss_browser.png)
+
+2. Скриншот состояний events-service и тестов
+[kubernetes-tests](docs\kubernetes-tests.png)
+
+# Задание 4
+Решение перенесено в Kubernetes и упаковано в helm.
