@@ -1,0 +1,64 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title C4 Container: CinemaAbyss To-Be Architecture
+
+Person(user, "Пользователь", "Смотрит фильмы, управляет подпиской, оплачивает доступ, ставит оценки и добавляет фильмы в избранное")
+
+/' REGION External systems '/
+System_Ext(recommendationSystem, "Сторонняя рекомендательная система", "External API", "Формирует персональные подборки контента")
+System_Ext(paymentProvider, "Платежная система", "External API", "Проводит платежи по подпискам")
+System_Ext(partnerServices, "Партнерские сервисы", "External API", "Маркетплейсы и программы лояльности для скидок и промокодов")
+/' END REGION External systems '/
+
+System_Boundary(cinemaAbyss, "Кинобездна") {
+    Container(webApp, "Web App", "SPA / React", "Интерфейс для браузеров")
+    Container(mobileApp, "Mobile App", "iOS / Android", "Мобильный клиент")
+
+    Container(apiGateway, "API Gateway / Strangler Proxy", "Go REST API", "Единая точка входа; маршрутизация клиентских запросов; feature flag % миграции movies для постепенного перевода.")
+
+    Container(legacyMonolith, "Legacy Monolith", "Go REST API", "Переходный монолит: обслуживает еще не вынесенные домены")
+    Container(movieService, "Movies Service", "Go REST API", "Сервис фильмов названия, описания, жанры, актеры, рейтинги")
+    Container(identityService, "Identity Service", "Go REST API", "Пользователи, аутентификация и профиль")
+    Container(billingService, "Billing Service", "Go REST API", "Платежи, подписки и тарифные планы")
+    Container(loyaltyService, "Loyalty Service", "Go REST API", "Скидки, промокоды и интеграции с программами лояльности")
+    Container(eventsService, "Events Service", "Go REST API + Kafka producer/consumer", "Публикации и обработки User/Payment/Movie events")
+
+    ContainerQueue(kafka, "Kafka", "Apache Kafka", "Асинхронная интеграция через доменные события")
+
+    ContainerDb(cinemaDb, "Cinema DB", "PostgreSQL", "Переходная общая БД; домены постепенно выделяются в отдельные схемы/хранилища")
+}
+
+Rel(user, webApp, "Использует", "HTTPS")
+Rel(user, mobileApp, "Использует", "HTTPS")
+
+Rel(webApp, apiGateway, "Вызывает API", "HTTPS/JSON")
+Rel(mobileApp, apiGateway, "Вызывает API", "HTTPS/JSON")
+
+Rel(apiGateway, movieService, "Маршрутизирует /api/movies по feature flag", "HTTP/JSON")
+Rel(apiGateway, legacyMonolith, "Маршрутизирует не вынесенные домены и fallback-трафик", "HTTP/JSON")
+Rel(apiGateway, identityService, "Маршрутизирует /api/users и auth-запросы", "HTTP/JSON")
+Rel(apiGateway, billingService, "Маршрутизирует /api/payments и /api/subscriptions", "HTTP/JSON")
+Rel(apiGateway, loyaltyService, "Маршрутизирует запросы скидок и промокодов", "HTTP/JSON")
+Rel(apiGateway, eventsService, "Маршрутизирует /api/events", "HTTP/JSON")
+
+Rel(legacyMonolith, cinemaDb, "Читает и пишет данные переходного монолита", "SQL")
+Rel(movieService, cinemaDb, "Читает и пишет метаданные фильмов на этапе бесшовной миграции", "SQL")
+Rel(identityService, cinemaDb, "Читает и пишет данные пользователей", "SQL")
+Rel(billingService, cinemaDb, "Читает и пишет платежи и подписки", "SQL")
+Rel(loyaltyService, cinemaDb, "Читает и пишет скидки и правила лояльности", "SQL")
+
+Rel(eventsService, kafka, "Публикует User/Payment/Movie events", "Kafka")
+Rel(kafka, eventsService, "Доставляет события для обработки и логирования", "Kafka consumer")
+Rel(movieService, kafka, "Публикует события изменения метаданных", "Kafka")
+Rel(identityService, kafka, "Публикует события пользователей", "Kafka")
+Rel(billingService, kafka, "Публикует события платежей и подписок", "Kafka")
+Rel(loyaltyService, kafka, "Публикует события скидок и промокодов", "Kafka")
+
+Rel(legacyMonolith, recommendationSystem, "Получает рекомендации во время миграции", "HTTPS/JSON")
+Rel(movieService, recommendationSystem, "Передает метаданные и получает подборки после выделения домена", "HTTPS/JSON")
+Rel(billingService, paymentProvider, "Инициирует и проверяет платежи", "HTTPS/API")
+Rel(loyaltyService, partnerServices, "Проверяет скидки и партнерские предложения", "HTTPS/API")
+
+SHOW_LEGEND()
+@enduml

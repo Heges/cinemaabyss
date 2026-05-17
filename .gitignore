@@ -189,6 +189,17 @@ build/
 ### Mac OS ###
 .DS_Store
 
+### Node.js ###
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+### Postman / Newman reports ###
+tests/postman/reports/
+
 
 tmp/
 task-*
